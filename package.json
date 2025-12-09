@@ -1,0 +1,33 @@
+{
+  "name": "o-minimo-que-voce-precisa-saber",
+  "version": "1.0.0",
+  "description": "Backend API for English Course - Simple SQLite",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "dev:backend": "nodemon server.js",
+    "dev:frontend": "cd english-page && npm run dev",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SevenZeroSev3n/O-MINIMO-QUE-VOCE-PRECISA-SABER.git"
+  },
+  "keywords": [
+    "api",
+    "express",
+    "sqlite"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
