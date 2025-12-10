@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styles from '../styles/Profile.module.css'; 
+import styles from '../../styles/Profile.module.css';
 const HomePageContent = () => {
   const [formData, setFormData] = useState({
     nome: '',
