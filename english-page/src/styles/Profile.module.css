@@ -1,4 +1,9 @@
 /* HERO */
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
 
 .hero {
   margin-top: 40px;

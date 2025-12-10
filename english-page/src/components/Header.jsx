@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import styles from './styles/Header.module.css';
+import styles from '../styles/Header.module.css';
 
 const Header = () => {
   return (
@@ -9,13 +9,7 @@ const Header = () => {
           <div className={styles.logoBadge}>🇺🇸</div>
           <div>
             <div>O MÍNIMO</div>
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: "#9ca3af",
-                textTransform: "none"
-              }}
-            >
+            <div className={styles.logoSubtitle}>
               pra se virar nos EUA
             </div>
           </div>
