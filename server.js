@@ -46,6 +46,10 @@ db.exec(`
     goal TEXT,
     schedule TEXT,
     message TEXT,
+    source TEXT DEFAULT 'direct',
+    utm_source TEXT,
+    utm_medium TEXT,
+    utm_campaign TEXT,
     status TEXT DEFAULT 'new',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -73,6 +77,35 @@ db.exec(`
 `);
 
 console.log('✅ Database tables created');
+
+// Add tracking columns if they don't exist
+try {
+  db.prepare('ALTER TABLE leads ADD COLUMN source TEXT DEFAULT "direct"').run();
+  console.log('✅ Column "source" added');
+} catch (e) {
+  // Column already exists
+}
+
+try {
+  db.prepare('ALTER TABLE leads ADD COLUMN utm_source TEXT').run();
+  console.log('✅ Column "utm_source" added');
+} catch (e) {
+  // Column already exists
+}
+
+try {
+  db.prepare('ALTER TABLE leads ADD COLUMN utm_medium TEXT').run();
+  console.log('✅ Column "utm_medium" added');
+} catch (e) {
+  // Column already exists
+}
+
+try {
+  db.prepare('ALTER TABLE leads ADD COLUMN utm_campaign TEXT').run();
+  console.log('✅ Column "utm_campaign" added');
+} catch (e) {
+  // Column already exists
+}
 
 // Create admin user if not exists
 const adminExists = db.prepare('SELECT * FROM users WHERE email = ?').get('admin@example.com');
@@ -256,25 +289,50 @@ app.get('/api/courses', (req, res) => {
   }
 });
 
-// Create lead (public)
+// Create lead (public) - COM TRACKING
 app.post('/api/leads', async (req, res) => {
   try {
-    const { name, email, whatsapp, city, level, goal, schedule, message } = req.body;
+    const { 
+      name, email, whatsapp, city, level, goal, schedule, message,
+      source, utm_source, utm_medium, utm_campaign
+    } = req.body;
     
-    console.log('📝 Novo lead recebido:', { name, whatsapp, city });
+    console.log('📝 Novo lead recebido:', { 
+      name, 
+      whatsapp, 
+      city, 
+      source: source || 'direct',
+      campaign: utm_campaign || 'none'
+    });
     
     if (!name || !whatsapp) {
       return res.status(400).json({ error: 'Nome e WhatsApp são obrigatórios' });
     }
     
     const insert = db.prepare(`
-      INSERT INTO leads (name, email, whatsapp, city, level, goal, schedule, message)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO leads (
+        name, email, whatsapp, city, level, goal, schedule, message,
+        source, utm_source, utm_medium, utm_campaign
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    const result = insert.run(name, email, whatsapp, city, level, goal, schedule, message);
+    const result = insert.run(
+      name, 
+      email, 
+      whatsapp, 
+      city, 
+      level, 
+      goal, 
+      schedule, 
+      message,
+      source || 'direct',
+      utm_source || 'direct',
+      utm_medium || 'none',
+      utm_campaign || 'none'
+    );
     
-    console.log('✅ Lead salvo no banco. ID:', result.lastInsertRowid);
+    console.log('✅ Lead salvo no banco. ID:', result.lastInsertRowid, '| Source:', source || 'direct');
     
     // Webhook para Make.com
     if (process.env.WEBHOOK_URL) {
@@ -282,6 +340,10 @@ app.post('/api/leads', async (req, res) => {
         const webhookData = {
           id: result.lastInsertRowid,
           name, whatsapp, city, level, goal, schedule, message, email,
+          source: source || 'direct',
+          utm_source: utm_source || 'direct',
+          utm_medium: utm_medium || 'none',
+          utm_campaign: utm_campaign || 'none',
           timestamp: new Date().toISOString()
         };
 
@@ -392,6 +454,30 @@ app.get('/api/admin/stats', authMiddleware, adminMiddleware, (req, res) => {
   }
 });
 
+// Get statistics by source (NOVO)
+app.get('/api/admin/stats/sources', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const sources = db.prepare(`
+      SELECT 
+        source,
+        utm_campaign,
+        COUNT(*) as total,
+        COUNT(CASE WHEN status = 'converted' THEN 1 END) as converted,
+        COUNT(CASE WHEN status = 'new' THEN 1 END) as new,
+        COUNT(CASE WHEN status = 'contacted' THEN 1 END) as contacted
+      FROM leads
+      WHERE source IS NOT NULL
+      GROUP BY source, utm_campaign
+      ORDER BY total DESC
+    `).all();
+    
+    res.json(sources);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao buscar fontes' });
+  }
+});
+
 // Update lead status
 app.patch('/api/admin/leads/:id/status', authMiddleware, adminMiddleware, (req, res) => {
   try {
@@ -439,6 +525,7 @@ app.listen(PORT, () => {
   console.log('📂 Database: dev.db (SQLite)');
   console.log('🔗 CORS enabled for: http://localhost:5173');
   console.log('🔐 Admin credentials: admin@example.com / admin123');
+  console.log('📊 UTM Tracking: Enabled');
   
   if (process.env.WEBHOOK_URL) {
     console.log('📡 Webhook: Configured');
