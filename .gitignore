@@ -17,6 +17,9 @@ node_modules
 *.sqlite
 *.sqlite3
 
+# SQLite Browser Pro project files
+*.sqbpro
+
 # Logs
 *.log
 logs/
